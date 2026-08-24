@@ -1,0 +1,18 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 0;
+}
+
+footer {
+    background-color: #222;
+    color: white;
+    text-align: center;
+    margin-top: 100px;
+    padding: 20px;
+}
+
+footer a {
+    color: #4da6ff;
+    text-decoration: none;
+}
