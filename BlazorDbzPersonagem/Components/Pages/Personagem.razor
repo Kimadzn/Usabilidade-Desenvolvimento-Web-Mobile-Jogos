@@ -1,0 +1,117 @@
+
+@page "/personagem"
+@rendermode InteractiveServer
+@using System.Net.Http.Json
+@using BlazorDbzPersonagem.Models
+@inject HttpClient Http
+
+<PageTitle>Personagem de Dragon Ball</PageTitle>
+
+<h1>Personagens de Dragon Ball</h1>
+
+<p>Digite o ID de um personagem para consultar a API.</p>
+
+<div class="mb-3">
+    <label for="personagemId" class="form-label">
+        ID do personagem
+    </label>
+
+    <input id="personagemId"
+           type="number"
+           class="form-control"
+           min="1"
+           @bind="personagemId" />
+</div>
+
+<button class="btn btn-primary"
+        @onclick="BuscarPersonagem"
+        disabled="@carregando">
+    @(carregando ? "Consultando..." : "Buscar personagem")
+</button>
+
+@if (!string.IsNullOrWhiteSpace(erro))
+{
+    <div class="alert alert-danger mt-3">
+        @erro
+    </div>
+}
+
+@if (personagem != null)
+{
+    <div class="card mt-4 p-3">
+        <h2>@personagem.Name</h2>
+
+        <p>
+            <strong>ID:</strong> @personagem.Id
+        </p>
+
+        <p>
+            <strong>Planeta:</strong>
+            @(personagem.OriginPlanet?.Name ?? "Não informado")
+        </p>
+
+        <h3>Transformações</h3>
+
+        @if (personagem.Transformations.Count > 0)
+        {
+            <ul>
+                @foreach (var transformacao in personagem.Transformations)
+                {
+                    <li>@transformacao.Name</li>
+                }
+            </ul>
+        }
+        else
+        {
+            <p>Nenhuma transformação cadastrada.</p>
+        }
+    </div>
+}
+
+@code {
+    private int personagemId = 1;
+
+    private PersonagemDbz? personagem;
+
+    private string erro = "";
+
+    private bool carregando = false;
+
+    private async Task BuscarPersonagem()
+    {
+        if (personagemId < 1)
+        {
+            erro = "Digite um ID válido.";
+            personagem = null;
+            return;
+        }
+
+        carregando = true;
+        erro = "";
+        personagem = null;
+
+        try
+        {
+            personagem = await Http.GetFromJsonAsync<PersonagemDbz>(
+                $"api/characters/{personagemId}"
+            );
+
+            if (personagem == null)
+            {
+                erro = "Personagem não encontrado.";
+            }
+        }
+        catch (HttpRequestException)
+        {
+            erro = "Não foi possível encontrar o personagem. Confira o ID.";
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            erro = "Não foi possível interpretar os dados recebidos da API.";
+        }
+        finally
+        {
+            carregando = false;
+        }
+    }
+}
