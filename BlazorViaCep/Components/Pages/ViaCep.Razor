@@ -1,0 +1,71 @@
+
+@page "/viacep"
+@rendermode InteractiveServer
+@using BlazorViaCep.Models
+@inject BlazorViaCep.Services.ViaCepService ViaCepService
+
+<PageTitle>Consulta ViaCEP</PageTitle>
+
+<h3>Consulta de CEP</h3>
+
+<div class="mb-3">
+    <label class="form-label">CEP:</label>
+    <input class="form-control"
+           @bind="cep"
+           placeholder="Digite o CEP" />
+</div>
+
+<button class="btn btn-primary"
+        @onclick="ConsultarCep">
+    Consultar CEP
+</button>
+
+@if (!string.IsNullOrEmpty(mensagem))
+{
+    <p class="mt-3">@mensagem</p>
+}
+
+@if (endereco != null)
+{
+    <div class="mt-4">
+        <h4>Endereço encontrado</h4>
+
+        <p><strong>CEP:</strong> @endereco.Cep</p>
+        <p><strong>Logradouro:</strong> @endereco.Logradouro</p>
+        <p><strong>Complemento:</strong> @endereco.Complemento</p>
+        <p><strong>Bairro:</strong> @endereco.Bairro</p>
+        <p><strong>Cidade:</strong> @endereco.Localidade</p>
+        <p><strong>Estado:</strong> @endereco.Uf</p>
+        <p><strong>DDD:</strong> @endereco.Ddd</p>
+    </div>
+}
+
+@code {
+    private string cep = "";
+    private string mensagem = "";
+    private Endereco? endereco;
+
+    private async Task ConsultarCep()
+    {
+        mensagem = "";
+        endereco = null;
+
+        try
+        {
+            endereco = await ViaCepService.BuscarCep(cep);
+
+            if (endereco == null)
+            {
+                mensagem = "CEP inválido ou não encontrado.";
+            }
+        }
+        catch (HttpRequestException)
+        {
+            mensagem = "Erro ao consultar a API ViaCEP.";
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            mensagem = "Erro ao processar os dados do endereço.";
+        }
+    }
+}
