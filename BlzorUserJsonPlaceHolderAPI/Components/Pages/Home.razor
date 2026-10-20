@@ -1,0 +1,59 @@
+﻿
+@page "/"
+@using System.Net.Http.Json
+@using BlzorUserJsonPlaceHolderAPI.Models
+@inject IHttpClientFactory HttpClientFactory
+
+<PageTitle>Usuários JSONPlaceholder</PageTitle>
+
+<h1>Usuário da API JSONPlaceholder</h1>
+
+@if (usuario is not null)
+{
+    <p>Nome: @usuario.Name</p>
+    <p>Cidade: @usuario.Address.City</p>
+    <p>Empresa: @usuario.Company.Name</p>
+}
+else if (!string.IsNullOrEmpty(erro))
+{
+    <p>Erro: @erro</p>
+}
+else
+{
+    <p>Carregando...</p>
+}
+
+@code {
+    private Usuario? usuario;
+    private string erro = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var http = HttpClientFactory.CreateClient();
+
+            var usuarios =
+                await http.GetFromJsonAsync<List<Usuario>>(
+                    "https://jsonplaceholder.typicode.com/users");
+
+            if (usuarios is { Count: > 0 })
+            {
+                usuario = usuarios[0];
+
+                Console.WriteLine($"Nome: {usuario.Name}");
+                Console.WriteLine($"Cidade: {usuario.Address.City}");
+                Console.WriteLine($"Empresa: {usuario.Company.Name}");
+            }
+            else
+            {
+                erro = "Nenhum usuário retornado.";
+            }
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+            Console.WriteLine($"Erro: {ex.Message}");
+        }
+    }
+}
