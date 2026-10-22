@@ -1,0 +1,112 @@
+﻿@page "/"
+@inject HttpClient Http
+
+<PageTitle>Home - Consulta CEP</PageTitle>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h2 class="mb-4 text-center">Consulta de CEP com BrasilAPI</h2>
+
+            <div class="card shadow-sm p-4">
+                <div class="mb-3">
+                    <label for="cepInput" class="form-label">Informe o CEP:</label>
+                    <div class="input-group">
+                        <input id="cepInput" 
+                               class="form-control" 
+                               @bind="cep" 
+                               placeholder="Ex: 30130000" 
+                               maxlength="8" />
+                        <button class="btn btn-primary" @onclick="ConsultarCep" disabled="@carregando">
+                            @if (carregando)
+                            {
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                <span> Consultando...</span>
+                            }
+                            else
+                            {
+                                <span>Buscar Endereço</span>
+                            }
+                        </button>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(mensagemErro))
+                {
+                    <div class="alert alert-danger mt-3" role="alert">
+                        @mensagemErro
+                    </div>
+                }
+
+                @if (resultado != null)
+                {
+                    <div class="card mt-4 border-success">
+                        <div class="card-body bg-light">
+                            <h5 class="card-title text-success">Resultado Encontrado</h5>
+                            <hr />
+                            <p class="mb-1"><strong>CEP:</strong> @resultado.Cep</p>
+                            <p class="mb-1"><strong>Logradouro:</strong> @resultado.Street</p>
+                            <p class="mb-1"><strong>Bairro:</strong> @resultado.Neighborhood</p>
+                            <p class="mb-1"><strong>Cidade/UF:</strong> @resultado.City - @resultado.State</p>
+                            <p class="mb-0 text-muted"><small>Fonte/Serviço: @resultado.Service</small></p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string cep = string.Empty;
+    private CepResponse? resultado;
+    private string? mensagemErro;
+    private bool carregando;
+
+    private async Task ConsultarCep()
+    {
+        mensagemErro = null;
+        resultado = null;
+
+        // Remove caracteres não numéricos
+        var cepLimpo = new string(cep.Where(char.IsDigit).ToArray());
+
+        if (cepLimpo.Length != 8)
+        {
+            mensagemErro = "Por favor, digite um CEP válido contendo exatamente 8 dígitos.";
+            return;
+        }
+
+        carregando = true;
+        try
+        {
+            // Como o Program.cs usa o host local, passamos a URL completa da BrasilAPI
+            var url = $"https://brasilapi.com.br/api/cep/v2/{cepLimpo}";
+            resultado = await Http.GetFromJsonAsync<CepResponse>(url);
+
+            if (resultado == null)
+            {
+                mensagemErro = "Nenhum endereço foi encontrado para este CEP.";
+            }
+        }
+        catch (Exception)
+        {
+            mensagemErro = "Não foi possível concluir a consulta. Verifique o CEP informado ou sua conexão.";
+        }
+        finally
+        {
+            carregando = false;
+        }
+    }
+
+    // DTO mapeando a resposta da BrasilAPI v2
+    public class CepResponse
+    {
+        public string Cep { get; set; } = string.Empty;
+        public string State { get; set; } = string.Empty;
+        public string City { get; set; } = string.Empty;
+        public string Neighborhood { get; set; } = string.Empty;
+        public string Street { get; set; } = string.Empty;
+        public string Service { get; set; } = string.Empty;
+    }
+}
