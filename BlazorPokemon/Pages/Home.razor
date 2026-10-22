@@ -1,0 +1,67 @@
+﻿@page "/"
+@inject HttpClient Http
+
+<PageTitle>BlazorPokeApi - Buscar Pokémon</PageTitle>
+
+<h1>Buscar Pokémon</h1>
+
+<div class="mb-3" style="max-width: 400px;">
+    <label for="pokemonInput" class="form-label">Nome do Pokémon:</label>
+    <input id="pokemonInput" class="form-control" @bind="searchTerm" placeholder="Ex: pikachu" />
+</div>
+
+<button class="btn btn-primary mb-4" @onclick="BuscarPokemon">Buscar Pokémon</button>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger" role="alert">
+        @errorMessage
+    </div>
+}
+
+@if (pokemon != null)
+{
+    <div class="card p-4 shadow-sm" style="max-width: 400px;">
+        <h3>Detalhes do Pokémon</h3>
+        
+        @if (!string.IsNullOrEmpty(pokemon.Sprites?.Other?.OfficialArtwork?.FrontDefault))
+        {
+            <div class="text-center my-3">
+                <img src="@pokemon.Sprites.Other.OfficialArtwork.FrontDefault" alt="@pokemon.Name" style="width: 200px; height: 200px; object-fit: contain;" />
+            </div>
+        }
+
+        <p><strong>ID:</strong> @pokemon.Id</p>
+        <p><strong>Nome:</strong> @pokemon.Name</p>
+        <p><strong>Altura:</strong> @(pokemon.Height / 10.0) m</p>
+        <p><strong>Peso:</strong> @(pokemon.Weight / 10.0) kg</p>
+    </div>
+}
+
+@code {
+    private string searchTerm = "pikachu";
+    private PokemonModel? pokemon;
+    private string? errorMessage;
+
+    private async Task BuscarPokemon()
+    {
+        errorMessage = null;
+        pokemon = null;
+
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            errorMessage = "Por favor, digite o nome de um Pokémon.";
+            return;
+        }
+
+        try
+        {
+            string url = $"https://pokeapi.co/api/v2/pokemon/{searchTerm.ToLower().Trim()}";
+            pokemon = await Http.GetFromJsonAsync<PokemonModel>(url);
+        }
+        catch (Exception)
+        {
+            errorMessage = "Pokémon não encontrado ou erro de conexão com a API.";
+        }
+    }
+}
