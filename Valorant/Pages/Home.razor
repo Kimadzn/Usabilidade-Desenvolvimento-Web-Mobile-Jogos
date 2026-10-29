@@ -1,0 +1,90 @@
+﻿@page "/"
+@using Valorant.Models
+@using Valorant.Services
+@inject IValorantApiService ValorantApiService
+
+<PageTitle>Buscar Agente VALORANT</PageTitle>
+
+<h1>Buscar Agente VALORANT</h1>
+
+<div class="mb-3">
+    <label for="uuidInput" class="form-label">UUID do Agente:</label>
+    <input type="text" id="uuidInput" class="form-control" style="max-width: 500px;" @bind="agentUuid" placeholder="Digite o UUID aqui..." />
+</div>
+
+<button class="btn btn-primary mb-3" @onclick="BuscarAgente" disabled="@isLoading">
+    @if (isLoading)
+    {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        <span> Buscando...</span>
+    }
+    else
+    {
+        <span>Buscar Agente</span>
+    }
+</button>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger" role="alert">
+        @errorMessage
+    </div>
+}
+
+@if (agentData != null)
+{
+    <hr />
+    <div class="agent-details">
+        <h2>@agentData.DisplayName</h2>
+
+        @if (!string.IsNullOrEmpty(agentData.FullPortrait))
+        {
+            <div class="my-3">
+                <img src="@agentData.FullPortrait" alt="@agentData.DisplayName" style="max-width: 300px; height: auto;" />
+            </div>
+        }
+
+        <p class="mt-3" style="max-width: 600px; font-size: 1.1rem;">
+            @agentData.Description
+        </p>
+    </div>
+}
+
+@code {
+    private string agentUuid = string.Empty;
+    private AgentData? agentData;
+    private bool isLoading = false;
+    private string? errorMessage;
+
+    private async Task BuscarAgente()
+    {
+        errorMessage = null;
+        agentData = null;
+
+        if (string.IsNullOrWhiteSpace(agentUuid))
+        {
+            errorMessage = "Por favor, informe um UUID válido.";
+            return;
+        }
+
+        isLoading = true;
+
+        try
+        {
+            agentData = await ValorantApiService.GetAgentByUuidAsync(agentUuid);
+
+            if (agentData == null)
+            {
+                errorMessage = "Agente não encontrado. Verifique o UUID digitado.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Ocorreu um erro ao consultar a API: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}
