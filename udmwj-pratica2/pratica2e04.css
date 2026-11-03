@@ -1,0 +1,30 @@
+/* Basic CSS example */
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #2326e0;
+}
+
+h1 {
+    color: #ffffff;
+    text-align: center;
+    text-size-adjust: 250px
+    ;
+}
+
+p {
+    color: #666;
+    line-height: 1.6;
+    margin: 10px 20px;
+}
+
+a {
+    color: #007BFF;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
