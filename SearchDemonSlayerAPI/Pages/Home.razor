@@ -1,0 +1,132 @@
+﻿
+@page "/"
+
+@using SearchDemonSlayerAPI.Models
+@using SearchDemonSlayerAPI.Services
+
+@inject DemonSlayerService DemonSlayerService
+
+<PageTitle>Search Demon Slayer API</PageTitle>
+
+<div class="container mt-4">
+
+    <h1 class="text-center mb-2">
+        Demon Slayer Characters
+    </h1>
+
+    <p class="text-center text-muted mb-4">
+        Pesquise seus personagens favoritos de Kimetsu no Yaiba
+    </p>
+
+    <div class="mb-4">
+        <input class="form-control"
+               type="text"
+               placeholder="Pesquisar personagem..."
+               @bind="searchTerm"
+               @bind:event="oninput" />
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center">
+            <p>Carregando personagens...</p>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">
+            @errorMessage
+        </div>
+    }
+    else if (FilteredCharacters.Any())
+    {
+        <div class="row">
+
+            @foreach (var character in FilteredCharacters)
+            {
+                <div class="col-md-4 col-lg-3 mb-4">
+
+                    <div class="card h-100 shadow-sm">
+
+                        <img src="@character.Img"
+                             class="card-img-top"
+                             alt="@character.Name"
+                             style="height: 280px; object-fit: cover;" />
+
+                        <div class="card-body">
+
+                            <h5 class="card-title">
+                                @character.Name
+                            </h5>
+
+                            <p class="card-text">
+                                <strong>Idade:</strong>
+                                @(character.Age?.ToString() ?? "Não informada")
+                            </p>
+
+                            <p class="card-text">
+                                <strong>Raça:</strong>
+                                @(string.IsNullOrWhiteSpace(character.Race)
+                                    ? "Não informada"
+                                    : character.Race)
+                            </p>
+
+                            <hr />
+
+                            <p class="card-text">
+                                <strong>Citação:</strong>
+                                <br />
+                                <em>@character.Quote</em>
+                            </p>
+
+                        </div>
+                    </div>
+
+                </div>
+            }
+
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning text-center">
+            Nenhum personagem encontrado.
+        </div>
+    }
+
+</div>
+
+@code {
+
+    private List<Character> characters = new();
+
+    private string searchTerm = string.Empty;
+
+    private bool isLoading = true;
+
+    private string errorMessage = string.Empty;
+
+    private IEnumerable<Character> FilteredCharacters =>
+        characters.Where(character =>
+            character.Name.Contains(
+                searchTerm,
+                StringComparison.OrdinalIgnoreCase
+            )
+        );
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            characters = await DemonSlayerService.GetCharactersAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao carregar personagens: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}
