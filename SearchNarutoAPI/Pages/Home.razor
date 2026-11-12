@@ -1,0 +1,170 @@
+﻿@page "/"
+
+@using SearchNarutoAPI.Models
+@using SearchNarutoAPI.Services
+@inject NarutoService Naruto
+
+<PageTitle>Personagens Naruto</PageTitle>
+
+<div class="container mt-4">
+
+    <h1 class="text-center mb-4">
+        Universo Naruto
+    </h1>
+
+    <div class="input-group mb-4">
+
+        <input class="form-control"
+               placeholder="Pesquisar personagem..."
+               @bind="searchName"
+               @bind:event="oninput" />
+
+        <button class="btn btn-primary"
+                @onclick="SearchCharacters">
+            Pesquisar
+        </button>
+
+        <button class="btn btn-secondary"
+                @onclick="ClearSearch">
+            Limpar
+        </button>
+
+    </div>
+
+    @if (loading)
+    {
+        <p class="text-center">Carregando personagens...</p>
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">
+            @errorMessage
+        </div>
+    }
+    else if (characters.Count == 0)
+    {
+        <p class="text-center">
+            Nenhum personagem encontrado.
+        </p>
+    }
+    else
+    {
+        <div class="row">
+
+            @foreach (var character in characters)
+            {
+                <div class="col-md-6 col-lg-4 mb-4">
+
+                    <div class="card h-100 shadow">
+
+                        @if (character.Images.Count > 0)
+                        {
+                            <img src="@character.Images[0]"
+                                 class="card-img-top character-image"
+                                 alt="@character.Name" />
+                        }
+
+                        <div class="card-body">
+
+                            <h4 class="card-title">
+                                @character.Name
+                            </h4>
+
+                            <p>
+                                <strong>Clã / Afiliação:</strong>
+                                @character.GetClanOrAffiliation()
+                            </p>
+
+                            <p>
+                                <strong>Patente Ninja:</strong>
+                                @character.GetNinjaRank()
+                            </p>
+
+                            <hr />
+
+                            <h6>Jutsus:</h6>
+
+                            @if (character.Jutsu.Count > 0)
+                            {
+                                <ul class="jutsu-list">
+                                    @foreach (var jutsu in character.Jutsu.Take(10))
+                                    {
+                                        <li>@jutsu</li>
+                                    }
+                                </ul>
+
+                                @if (character.Jutsu.Count > 10)
+                                {
+                                    <small class="text-muted">
+                                        E mais @(character.Jutsu.Count - 10) jutsus...
+                                    </small>
+                                }
+                            }
+                            else
+                            {
+                                <p>Não informado.</p>
+                            }
+
+                        </div>
+
+                    </div>
+
+                </div>
+            }
+
+        </div>
+    }
+
+</div>
+
+@code {
+
+    private List<Character> characters = [];
+
+    private string searchName = "";
+
+    private bool loading = true;
+
+    private string errorMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCharacters();
+    }
+
+    private async Task LoadCharacters()
+    {
+        loading = true;
+        errorMessage = "";
+
+        try
+        {
+            var response = await Naruto.GetCharactersAsync(
+                page: 1,
+                limit: 20,
+                name: searchName
+            );
+
+            characters = response.Characters;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Erro ao carregar personagens: " + ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task SearchCharacters()
+    {
+        await LoadCharacters();
+    }
+
+    private async Task ClearSearch()
+    {
+        searchName = "";
+        await LoadCharacters();
+    }
+}
