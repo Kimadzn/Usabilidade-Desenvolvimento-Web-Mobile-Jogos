@@ -1,0 +1,229 @@
+﻿
+@page "/"
+
+@using BlazorWasmSuperHeroApi.Models
+@using System.Net.Http.Json
+
+@inject HttpClient Http
+
+<PageTitle>SuperHero Search</PageTitle>
+
+<div class="container mt-4">
+
+    <div class="text-center mb-4">
+        <h1 class="text-primary">SuperHero Search</h1>
+
+        <p class="text-muted">
+            Busque por heróis e vilões utilizando a API oficial do SuperHero.
+        </p>
+    </div>
+
+    <div class="row justify-content-center mb-4">
+
+        <div class="col-md-6">
+
+            <div class="input-group">
+
+                <input class="form-control"
+                       placeholder="Digite o nome do personagem..."
+                       @bind="searchTerm"
+                       @bind:event="oninput"
+                       @onkeydown="HandleKeyDown" />
+
+                <button class="btn btn-primary"
+                        @onclick="SearchHeroes"
+                        disabled="@isLoading">
+
+                    @if (isLoading)
+                    {
+                        <span>Pesquisando...</span>
+                    }
+                    else
+                    {
+                        <span>Pesquisar</span>
+                    }
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger shadow-sm">
+            @errorMessage
+        </div>
+    }
+
+    @if (hasSearched && heroes?.Any() == true)
+    {
+        <div class="row">
+
+            @foreach (var hero in heroes)
+            {
+                <div class="col-md-4 mb-4">
+
+                    <div class="card h-100 shadow-sm">
+
+                        <img src="@hero.Image.Url"
+                             class="card-img-top"
+                             alt="@hero.Name"
+                             style="height: 280px; object-fit: cover;" />
+
+                        <div class="card-body">
+
+                            <h4 class="card-title">
+                                @hero.Name
+
+                                @if (!string.IsNullOrWhiteSpace(hero.Biography.FullName)
+                                    && hero.Biography.FullName != "-")
+                                {
+                                    <small class="text-muted">
+                                        (@hero.Biography.FullName)
+                                    </small>
+                                }
+                            </h4>
+
+                            <p class="mb-2">
+                                <strong>Editora:</strong>
+                                @hero.Biography.Publisher
+                            </p>
+
+                            <hr />
+
+                            <h6 class="text-secondary">
+                                POWERSTATS
+                            </h6>
+
+                            <p class="mb-1">
+                                Inteligência: @hero.Powerstats.Intelligence
+                            </p>
+
+                            <p class="mb-1">
+                                Força: @hero.Powerstats.Strength
+                            </p>
+
+                            <p class="mb-1">
+                                Velocidade: @hero.Powerstats.Speed
+                            </p>
+
+                            <p class="mb-1">
+                                Durabilidade: @hero.Powerstats.Durability
+                            </p>
+
+                            <p class="mb-1">
+                                Poder: @hero.Powerstats.Power
+                            </p>
+
+                            <p class="mb-1">
+                                Combate: @hero.Powerstats.Combat
+                            </p>
+
+                            <hr />
+
+                            <h6 class="text-secondary">
+                                APARIÇÃO
+                            </h6>
+
+                            <p class="mb-1">
+                                @hero.Biography.FirstAppearance
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            }
+
+        </div>
+    }
+    else if (hasSearched && !isLoading && heroes?.Any() != true)
+    {
+        <div class="text-center mt-5">
+
+            <h5 class="text-muted">
+                Nenhum personagem encontrado para
+                "@searchTerm".
+            </h5>
+
+        </div>
+    }
+
+</div>
+
+@code {
+
+    private string searchTerm = string.Empty;
+
+    private List<SuperHero>? heroes;
+
+    private bool isLoading = false;
+
+    private bool hasSearched = false;
+
+    private string errorMessage = string.Empty;
+
+    // Substitua pelo seu token de acesso da SuperHero API.
+    private readonly string accessToken = "adbbf598f8f5ac2b7d5013e1d7f79686";
+
+    private async Task SearchHeroes()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+            return;
+
+        isLoading = true;
+        hasSearched = true;
+        errorMessage = string.Empty;
+        heroes = null;
+
+        try
+        {
+            // Montagem da URL conforme a documentação da API.
+            string url =
+                $"https://www.superheroapi.com/api.php/{accessToken}/search/{Uri.EscapeDataString(searchTerm.Trim())}";
+
+            // Consumo da API e conversão do JSON para a classe C#.
+            var result = await Http.GetFromJsonAsync<SuperHeroResponse>(url);
+
+            if (result?.Response == "success")
+            {
+                heroes = result.Results ?? new List<SuperHero>();
+            }
+            else
+            {
+                heroes = new List<SuperHero>();
+
+                errorMessage = "Não foi possível encontrar os personagens. Verifique o nome pesquisado.";
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            errorMessage = $"Erro ao conectar com a API: {ex.Message}";
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            errorMessage = "Erro ao processar os dados retornados pela API.";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Ocorreu um erro inesperado: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleKeyDown(
+        Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SearchHeroes();
+        }
+    }
+}
